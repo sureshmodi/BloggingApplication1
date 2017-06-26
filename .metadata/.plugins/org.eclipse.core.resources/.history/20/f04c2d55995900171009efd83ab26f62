@@ -1,0 +1,222 @@
+package org.cisco.cmad.BloggingApp.Database;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.cisco.cmad.BloggingApp.api.BlogPostEntity;
+import org.cisco.cmad.BloggingApp.api.BlogPostNotFoundException;
+import org.cisco.cmad.BloggingApp.api.Comments;
+import org.cisco.cmad.BloggingApp.api.UserAlreadyExistsException;
+import org.cisco.cmad.BloggingApp.api.UserDetails;
+import org.cisco.cmad.BloggingApp.api.UserNotFoundException;
+import org.mongodb.morphia.Datastore;
+import org.mongodb.morphia.Key;
+import org.mongodb.morphia.Morphia;
+import org.mongodb.morphia.dao.BasicDAO;
+import org.mongodb.morphia.dao.DAO;
+import org.mongodb.morphia.query.MorphiaIterator;
+import org.mongodb.morphia.query.Query;
+import org.mongodb.morphia.query.QueryResults;
+import org.mongodb.*;
+
+import com.mongodb.MongoClient;
+
+public class MongoDBDAOImpl implements UserDAOInf, BlogPostDAOInf, CommentsDAOInf {
+
+	private static MongoClient mongodb = new MongoClient("localhost", 27017);
+	
+    private static Morphia morphia = new Morphia();
+	
+    private static Datastore ds = morphia.createDatastore(mongodb,"blogging");
+    
+    
+   
+    private DAO<UserDetails, String> userdao = new BasicDAO<UserDetails, String>(UserDetails.class, ds);
+	private DAO<BlogPostEntity, String> blogdao = new BasicDAO<BlogPostEntity, String>(BlogPostEntity.class, ds);
+	private DAO<Comments, String> commentsdao = new BasicDAO<Comments,String>(Comments.class, ds);
+		
+	@Override
+	public Comments postComments(Comments comment, String blogid) {
+		
+		BlogPostEntity blogdb = blogdao.get(blogid);
+		
+		comment.setBlogid(blogid);
+		comment.setCommentid(comment.seq++);
+		comment.setBlogpost(blogdb);
+		
+		blogdb.setComments_count(blogdb.getComments_count()+1);
+		blogdb.getCommentslist().add(comment);
+		
+		commentsdao.save(comment);
+		blogdao.save(blogdb);
+		
+		return comment;
+	}
+
+	@Override
+	public List<Comments> getallComments(String blogid) {
+		
+		Query<Comments> query = ds.createQuery(Comments.class);
+		query.field("blogid").equal(blogid);
+		
+		List<Comments> commslist = commentsdao.find(query).asList();
+		return commslist;
+	}
+
+	@Override
+	public boolean createBlogpost(BlogPostEntity blogpost, String userid) {
+		
+				
+			UserDetails userdb = userdao.get(userid);
+			
+					
+			if (userdb != null) {
+				blogpost.setUserid(userid);
+				blogpost.setUser(userdao.get(userid));
+				userdb.getBlogids().add(blogpost.getBlogpostid());
+				userdb.getBlogposts().add(blogpost);
+				
+				blogdao.save(blogpost);
+				userdao.save(userdb);
+				return true;
+			} else {
+				System.out.println("Suresh: "+userid+" Not found");
+				throw new UserNotFoundException("user does not exist");
+			
+			}
+			
+
+	}
+
+	@Override
+	public boolean deleteBlogpost(String blogpostid) {
+		
+		Query<BlogPostEntity> blogquery = ds.createQuery(BlogPostEntity.class);
+		Query<Comments> commentsquery = ds.createQuery(Comments.class);
+		Query<UserDetails> userquery = ds.createQuery(UserDetails.class);
+				
+		commentsquery.field("blogid").equal(blogpostid);
+		blogquery.field("_id").equal(blogpostid);
+		userquery.field("blogposts").contains(blogpostid);
+		
+		BlogPostEntity blogdb = null;
+		UserDetails userdb = null;
+
+		userdb = userdao.get("vihaanmodi");
+		List<BlogPostEntity> bloglist = userdb.getBlogposts();
+		
+		System.out.println("Suresh: blogcount: "+bloglist.size());
+		System.out.println("Suresh: blogcount: "+bloglist.get(0).getBlogpostid());
+		
+		blogdb = blogdao.get(blogpostid);
+		
+		if (blogdb != null) {
+			
+			userdb.getBlogids().remove(blogpostid);
+					
+			if(bloglist.contains(blogdb)) {
+				System.out.println("Suresh: blog: "+bloglist.get(0).getBlogpostid());
+			} else {
+				System.out.println("Suresh: blogcount: "+bloglist.get(0).getBlogpostid());
+			}
+			
+			for(int i=0;i < bloglist.size();i++) {
+				
+					System.out.println("Suresh: blogid: "+bloglist.get(i).getBlogpostid());
+					if (bloglist.get(i).getBlogpostid().equals(blogpostid)	) {
+						bloglist.remove(i);
+						System.out.println("Successfully removed");
+						break;
+					} else {
+						continue;
+					}
+				
+			}
+			
+			
+			//bloglist.remove(blogdb);
+			System.out.println("Suresh: blogcount after removal: "+bloglist.size());
+			userdb.setBlogposts(bloglist);
+			userdao.save(userdb);
+								
+			commentsdao.deleteByQuery(commentsquery);
+			blogdao.deleteByQuery(blogquery);
+					
+				
+		} else {
+			throw new BlogPostNotFoundException("Blog "+blogpostid+" does not exist");
+		}
+				
+		return true;
+	}
+
+	@Override
+	public BlogPostEntity retrieveBlogpost(String blogpostid) {
+		    
+	    BlogPostEntity blogpost = blogdao.get(blogpostid);
+		return blogpost;
+		
+	}
+
+	@Override
+	public List<Object[]> listallBlogPosts() {
+		
+		Query<BlogPostEntity> query = blogdao.createQuery();
+		
+		Iterator<BlogPostEntity> iterator = query.fetch().iterator();
+		
+		List<Object[]> result = new ArrayList<>();
+		
+		BlogPostEntity blog = null;
+		
+		for(int i = 0; iterator.hasNext() ; i++) {
+			String obj[]= new String[2];
+			blog = iterator.next();
+			obj[0] = blog.getBlogpostid();
+			obj[1] = blog.getTitle();
+			result.add(i, obj);
+			System.out.println("Suresh: bloglist: blogid: "+result.get(i)[0]);
+			System.out.println("Suresh: bloglist: blogid: "+result.get(i)[1]);
+			
+		}
+		
+		
+		return result;
+	}
+
+	@Override
+	public void createUser(UserDetails userdetails) throws Exception {
+		
+			if (!(userdao.exists("userid", userdetails.getUserid()))) {
+				
+				Key<UserDetails> key = userdao.save(userdetails);
+				System.out.println("Suresh: key: "+key);
+				
+			} else {
+				
+				System.out.println("Suresh: User already exists");
+				throw new UserAlreadyExistsException("user "+userdetails.getUserid()+" already exists");
+			}
+			
+			
+
+	}
+
+	@Override
+	public UserDetails updateProfile(UserDetails userdetails) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public UserDetails retreiveUser(String userid) {
+		
+		UserDetails userdb = userdao.get(userid);
+		return userdb;
+	}
+
+}

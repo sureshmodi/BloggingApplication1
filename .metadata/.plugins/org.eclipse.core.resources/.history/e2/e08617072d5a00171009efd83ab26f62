@@ -1,0 +1,9 @@
+package org.cisco.cmad.BloggingApp.api;
+
+public interface JWTAuthentication {
+
+	void parseJWT(String userid, String jwttoken);
+	public String generateJwtToken(String userid, String issuer, String subject, long ttlMillis);
+		
+
+}

@@ -1,0 +1,9 @@
+package org.cisco.cmad.BloggingApp.api;
+
+public interface JWTAuthentication {
+
+	void parseJWT(String userid, String jwttoken);
+	
+		
+
+}

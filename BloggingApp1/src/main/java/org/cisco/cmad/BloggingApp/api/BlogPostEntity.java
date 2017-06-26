@@ -1,0 +1,174 @@
+package org.cisco.cmad.BloggingApp.api;
+
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.Lob;
+import javax.persistence.ManyToOne;
+import javax.persistence.MapKeyColumn;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import javax.persistence.Transient;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
+
+import org.mongodb.morphia.annotations.Property;
+import org.mongodb.morphia.annotations.Reference;
+import org.mongodb.morphia.annotations.Serialized;
+
+
+@Entity
+@org.mongodb.morphia.annotations.Entity(noClassnameStored = true)
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.FIELD)
+
+public class BlogPostEntity {
+	
+	@Id
+	@org.mongodb.morphia.annotations.Id
+	private String blogpostid;
+	private String title;
+	
+	@Lob
+	@Serialized
+	private String blogcontent;
+				
+	@XmlTransient
+	@Reference(idOnly=true)
+	private UserDetails user;
+		
+	private String author;
+	
+	private Date datecreated=new Date();
+	
+	@XmlTransient
+	@Reference(idOnly=true,lazy = false)
+	private List<Comments> commentslist = new ArrayList<>();
+		
+	private long comments_count=0;
+		
+	@Transient
+	private List<Link> links = new ArrayList<>();
+	
+	@XmlTransient
+	@Property(value="Author")
+	private String userid;
+	
+	public String getUserid() {
+		return userid;
+	}
+
+	public void setUserid(String userid) {
+		this.userid = userid;
+	}
+
+	public BlogPostEntity() {
+		
+		 this.datecreated=new Date();
+		
+	}
+
+	public BlogPostEntity(String blogpostid, String title, String blogcontent) {
+		
+		this.blogpostid = blogpostid;
+		this.title = title;
+		this.blogcontent = blogcontent;
+		this.datecreated = new Date();
+	}
+
+	public String getBlogpostid() {
+		return blogpostid;
+	}
+
+	public void setBlogpostid(String blogpostid) {
+		this.blogpostid = blogpostid;
+	}
+
+	public String getTitle() {
+		return title;
+	}
+
+	public void setTitle(String title) {
+		this.title = title;
+	}
+	
+	public List<Comments> getCommentslist() {
+		return commentslist;
+	}
+
+	public void setCommentslist(List<Comments> commentslist) {
+		this.commentslist = commentslist;
+	}
+
+	public UserDetails getUser() {
+		return user;
+	}
+
+	public void setUser(UserDetails user) {
+		this.user = user;
+	}
+
+	public Date getDatecreated() {
+		return datecreated;
+	}
+
+	public void setDatecreated(Date datecreated) {
+		this.datecreated = datecreated;
+	}
+		
+	public List<Link> getLinks() {
+		return links;
+	}
+
+	public void setLinks(List<Link> links) {
+		this.links = links;
+	}
+
+	public void addLinks(URI uri, String ref) {
+
+			Link link = new Link();
+			link.setUri(uri);
+			link.setReference(ref);
+			links.add(link);
+			
+	}
+	
+	public long getComments_count() {
+		return comments_count;
+	}
+
+	public void setComments_count(long comments_count) {
+		this.comments_count = comments_count;
+	}
+	
+	public String getAuthor() {
+		return author;
+	}
+
+	public void setAuthor(String author) {
+		this.author = author;
+	}
+	
+	public String getBlogcontent() {
+		return blogcontent;
+	}
+
+	public void setBlogcontent(String blogcontent) {
+		this.blogcontent = blogcontent;
+	}
+	
+}
