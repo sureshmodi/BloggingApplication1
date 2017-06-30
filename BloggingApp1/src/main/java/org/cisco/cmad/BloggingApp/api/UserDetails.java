@@ -153,12 +153,14 @@ public class UserDetails {
 		this.blogids = blogids;
 	}
 
-	public void addLinks(URI uri, String ref) {
+	public void addLinks(URI uri, String ref, String blogtitle) {
 
 			Link link = new Link();
 			link.setUri(uri);
 			link.setReference(ref);
+			link.setBlogtitle(blogtitle);
 			links.add(link);
+			
 			
 	}
 

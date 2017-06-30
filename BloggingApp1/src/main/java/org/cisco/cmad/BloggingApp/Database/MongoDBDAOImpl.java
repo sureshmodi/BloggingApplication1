@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.cisco.cmad.BloggingApp.api.BlogPostEntity;
 import org.cisco.cmad.BloggingApp.api.BlogPostNotFoundException;
@@ -30,11 +31,13 @@ public class MongoDBDAOImpl implements UserDAOInf, BlogPostDAOInf, CommentsDAOIn
 
 	private static MongoClient mongodb = new MongoClient("localhost", 27017);
 	
+	/*private static MongoClient mongodb = new MongoClient("104.154.147.202", 27017);*/
+	
     private static Morphia morphia = new Morphia();
 	
     private static Datastore ds = morphia.createDatastore(mongodb,"blogging");
     
-    
+    //private static Datastore dbidentifiers = morphia.(mongodb,"BloggingAppIdentifiers");  
    
     private DAO<UserDetails, String> userdao = new BasicDAO<UserDetails, String>(UserDetails.class, ds);
 	private DAO<BlogPostEntity, String> blogdao = new BasicDAO<BlogPostEntity, String>(BlogPostEntity.class, ds);
@@ -104,9 +107,9 @@ public class MongoDBDAOImpl implements UserDAOInf, BlogPostDAOInf, CommentsDAOIn
 		Query<Comments> commentsquery = ds.createQuery(Comments.class);
 		Query<UserDetails> userquery = ds.createQuery(UserDetails.class);
 		
-		blogquery.disableValidation();
+		/*blogquery.disableValidation();
 		commentsquery.disableValidation();
-		userquery.disableValidation();
+		userquery.disableValidation();*/
 				
 		commentsquery.field("blogid").equal(blogpostid);
 		blogquery.field("_id").equal(blogpostid);
@@ -196,6 +199,7 @@ public class MongoDBDAOImpl implements UserDAOInf, BlogPostDAOInf, CommentsDAOIn
 	@Override
 	public void createUser(UserDetails userdetails) throws Exception {
 		
+			
 			if (!(userdao.exists("userid", userdetails.getUserid()))) {
 				
 				Key<UserDetails> key = userdao.save(userdetails);
@@ -282,6 +286,67 @@ public class MongoDBDAOImpl implements UserDAOInf, BlogPostDAOInf, CommentsDAOIn
 		
 		UserDetails userdb = userdao.get(userid);
 		return userdb;
+	}
+
+	@Override
+	public List<Object[]> searchBlogPosts(String searchtext) {
+		
+		blogdao.ensureIndexes();
+		// create a regular expression which matches any string which includes "test"
+		/*Pattern regexp = Pattern.compile(searchtext);
+		String pattern = regexp.pattern();*/
+		//Query<BlogPostEntity> query = blogdao.createQuery().search(searchtext);
+		
+		Query<BlogPostEntity> query = blogdao.createQuery();
+		/*query.filter("blogcontent", regexp);*/
+		
+		/*query.or(
+				query.criteria("blogcontent").containsIgnoreCase(searchtext),
+				query.criteria("title").containsIgnoreCase(searchtext)
+						
+		);*/
+		
+		String uppercase = searchtext.toUpperCase();
+		String lowercase = searchtext.toLowerCase();
+		System.out.println("Suresh: toupper case: "+ uppercase + uppercase.charAt(0));
+		
+		System.out.println("Suresh: tolower case: "+ lowercase + lowercase.charAt(0));
+		lowercase.substring(1, lowercase.length()-1);
+		
+		Pattern regexp = Pattern.compile("(.*" + searchtext + ".*)", Pattern.CASE_INSENSITIVE);
+			
+		Iterator<BlogPostEntity> iterator = query.fetch().iterator();
+		
+		List<Object[]> result = new ArrayList<>();
+		
+		BlogPostEntity blog = null;
+				
+		for(int i = 0,index = 0; iterator.hasNext() ;i++) {
+			String obj[]= new String[2];
+			blog = iterator.next();
+						
+			/*if (blog.getBlogcontent().matches("(.*)"
+											   +searchtext+"(.*)") || blog.getTitle().matches("(.*)"+searchtext+"(.*)")) {*/
+			
+			
+			if (blog.getBlogcontent().matches("(.*)"+"["+uppercase.charAt(0)+lowercase.charAt(0)+"]"
+			    +searchtext.substring(1,searchtext.length()-1)+"(.*)") ||
+				blog.getTitle().matches("(.*)"+"["+uppercase.charAt(0)+lowercase.charAt(0)+"]"
+			    +searchtext.substring(1,searchtext.length()-1)+"(.*)")) {
+									
+					System.out.println("Suresh: Blogcontent matches: "+blog.getBlogpostid());
+					obj[0] = blog.getBlogpostid();
+					obj[1] = blog.getTitle();
+					result.add(index, obj);
+					index++;
+		     }	
+						
+					
+			
+		}
+		
+		
+		return result;
 	}
 
 }

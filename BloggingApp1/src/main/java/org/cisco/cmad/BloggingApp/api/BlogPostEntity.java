@@ -21,20 +21,24 @@ import javax.persistence.MapKeyColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Transient;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 
+import org.mongodb.morphia.annotations.*;
 import org.mongodb.morphia.annotations.Property;
 import org.mongodb.morphia.annotations.Reference;
 import org.mongodb.morphia.annotations.Serialized;
+import org.mongodb.morphia.utils.IndexType;
 
 
 @Entity
 @org.mongodb.morphia.annotations.Entity(noClassnameStored = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
+@Indexes(@Index(fields = {@Field(value = "title", type = IndexType.TEXT),@Field(value = "blogcontent", type = IndexType.TEXT)}))
 
 public class BlogPostEntity {
 	
@@ -138,11 +142,12 @@ public class BlogPostEntity {
 		this.links = links;
 	}
 
-	public void addLinks(URI uri, String ref) {
+	public void addLinks(URI uri, String ref, String blogtitle) {
 
 			Link link = new Link();
 			link.setUri(uri);
 			link.setReference(ref);
+			link.setBlogtitle(blogtitle);
 			links.add(link);
 			
 	}

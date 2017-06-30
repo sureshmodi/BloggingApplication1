@@ -81,4 +81,11 @@ public class CmadBlogPost implements BlogPost {
 		return 	commentlist;
 	}
 
+	@Override
+	public List<Object[]> searchBlogPosts(String searchtext) {
+		
+		List<Object[]> blogpostlist = blogdao.searchBlogPosts(searchtext);
+		return blogpostlist;
+	}
+
 }

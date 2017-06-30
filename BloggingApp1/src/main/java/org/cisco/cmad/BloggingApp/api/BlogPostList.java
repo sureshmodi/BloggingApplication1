@@ -32,7 +32,7 @@ public class BlogPostList {
 	public void addLinks(String title, URI uri) {
 			
 			Link link = new Link();
-			link.setReference(title);
+			link.setBlogtitle(title);
 			link.setUri(uri);
 			links.add(link);
 			

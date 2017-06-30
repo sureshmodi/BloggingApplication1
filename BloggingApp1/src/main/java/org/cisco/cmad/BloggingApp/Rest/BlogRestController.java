@@ -30,6 +30,7 @@ import org.cisco.cmad.BloggingApp.Database.JPABlogAppDAO;
 import org.cisco.cmad.BloggingApp.api.BlogPost;
 import org.cisco.cmad.BloggingApp.api.BlogPostEntity;
 import org.cisco.cmad.BloggingApp.api.BlogPostList;
+import org.cisco.cmad.BloggingApp.api.BlogPostNotFoundException;
 import org.cisco.cmad.BloggingApp.api.BlogUser;
 import org.cisco.cmad.BloggingApp.api.Comments;
 import org.cisco.cmad.BloggingApp.api.CommentsList;
@@ -54,8 +55,12 @@ public class BlogRestController {
 	@Path("/user/signup")
 	public Response addUser(UserDetails user) throws Exception {
 			
+			if(user != null && user.getUserid() != null && !((user.getUserid().contentEquals("")))) {
 				bloguser.createUser(user);
 				return Response.status(Status.CREATED).entity(user).build();
+			} 	else {
+				throw new InvalidUserCredentialsException("Missing mandatory user details");
+			}
 			   
 	
 	}
@@ -86,7 +91,7 @@ public class BlogRestController {
 			    		  .path(BlogRestController.class)
 			    		  .path("blogpost").path(id).build();
 			    
-			    blogpostdb.addLinks(uri, recvblogpost.getBlogpostid());
+			    blogpostdb.addLinks(uri, recvblogpost.getBlogpostid(),blogpostdb.getTitle());
 				return Response.created(uri).entity(blogpostdb).build();
 			    
 			   
@@ -114,7 +119,7 @@ public class BlogRestController {
 			
 		if(blog!=null) {
 			URI uri = uriinfo.getAbsolutePathBuilder().build();
-			blog.addLinks(uri,"Blog Comments");
+			blog.addLinks(uri,"Blog Comments","");
 			return Response.status(Status.OK).entity(blog).build();
 			
 		} else {
@@ -132,6 +137,7 @@ public class BlogRestController {
 	public Response userLogin(UserDetails user,@Context UriInfo uriinfo) {
 			
 		UserDetails userdb = null;
+		BlogPostEntity blog = null;
 		ErrorMsg errormsg= new ErrorMsg();
 		//String authorization = "Authorization";
 				
@@ -140,11 +146,12 @@ public class BlogRestController {
 			
 															
 			for (String blogid : userdb.getBlogids()) {
+						blog = blogpost.getBlogpost(blogid);
 						URI uri = uriinfo.getBaseUriBuilder().path(BlogRestController.class)
 									.path("blogpost")
 									.path(blogid)
 									.build();
-						userdb.addLinks(uri,blogid);
+						userdb.addLinks(uri,blogid,blog.getTitle());
 			}
 			
 			String token = jwtauth.generateJwtToken(user.getUserid(),uriinfo.getAbsolutePath().toString(),user.getUserid(),1000000);
@@ -284,6 +291,7 @@ public class BlogRestController {
 			
 		UserDetails userdb = null;
 		ErrorMsg errormsg= new ErrorMsg();
+		BlogPostEntity blog = null;
 				
 		if (userid!=null) {
 			
@@ -307,11 +315,12 @@ public class BlogRestController {
 	 		  userdb = bloguser.getUserDetails(userid);
 	 		
 			 for (String blogid: userdb.getBlogids()) {
+				 		blog = blogpost.getBlogpost(blogid);
 						URI uri = uriinfo.getBaseUriBuilder().path(BlogRestController.class)
 									.path("blogpost")
 									.path(blogid)
 									.build();
-						userdb.addLinks(uri,blogid);
+						userdb.addLinks(uri,blogid,blog.getTitle());
 			 }
 						
 			 return Response.status(Status.OK).entity(userdb).build();
@@ -368,6 +377,43 @@ public class BlogRestController {
 		}
 							   
 	
+	}
+	
+	@GET
+	@Produces({MediaType.APPLICATION_JSON,MediaType.APPLICATION_XML})
+	@Path("/blog/search/{search}")
+	public Response searchBlogposts(@Context UriInfo uriinfo,@PathParam("search") String searchtext) {
+		
+		System.out.println("Suresh: Received Blog Search text: "+searchtext);
+		List<Object[]> dbbloglist = blogpost.searchBlogPosts(searchtext);
+			
+		if(!dbbloglist.isEmpty() && dbbloglist != null) {
+						
+			BlogPostList bloglist = new BlogPostList();
+									
+			for (int i=0;i<dbbloglist.size();i++) {
+				
+				System.out.println("Suresh: Inside searchBlogPost: blogid: "+dbbloglist.get(i)[0]);
+				System.out.println("Suresh: Inside searchBlogPost: blogtitle: "+dbbloglist.get(i)[1]);
+				
+				URI uri = uriinfo.getBaseUriBuilder().path(BlogRestController.class)
+							.path("blogpost")
+							.path((String) dbbloglist.get(i)[0])
+							.build();
+				
+				bloglist.addLinks((String) dbbloglist.get(i)[1],uri);
+				
+			
+			}	
+		
+			return Response.status(Status.OK).entity(bloglist).build();
+			
+		} else {
+			throw new BlogPostNotFoundException("No results found. Try entering different keywords.");
+			//return Response.status(Status.NOT_FOUND).build();
+		}
+		
+		
 	}
 	
 }

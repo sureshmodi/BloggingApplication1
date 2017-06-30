@@ -10,5 +10,6 @@ public interface BlogPost {
     public List<Object[]> getallBlogPosts();
     public Comments postComments(Comments comment,String blogid);
 	public List<Comments> getallComments(String blogid);
+	public List<Object[]> searchBlogPosts(String searchtext);
 
 }

@@ -6,6 +6,14 @@ public class Link {
 	
 			URI uri;
 			String reference;
+			String blogtitle;
+			
+			public String getBlogtitle() {
+				return blogtitle;
+			}
+			public void setBlogtitle(String blogtitle) {
+				this.blogtitle = blogtitle;
+			}
 			public URI getUri() {
 				return uri;
 			}
@@ -19,7 +27,7 @@ public class Link {
 				this.reference = reference;
 			}
 			
-						
+							
 					
 
 }
